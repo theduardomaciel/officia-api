@@ -1,19 +1,41 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
+
+import { PrismaService } from '../prisma/prisma.service';
 import { Account, Prisma } from '@prisma/client';
 
-import { AccountsRepository } from '../accounts.repository';
+import { AccountsRepository } from './accounts.repository';
+
+function exclude<Account, Key extends keyof Account>(
+    account: Account,
+    keys: Key[]
+): any /* Omit<Account, Key> */ {
+    for (let key of keys) {
+        delete account[key];
+    }
+    return account;
+}
 
 @Injectable()
-export class AccountService implements AccountsRepository {
+export class AccountsService implements AccountsRepository {
     constructor(private prisma: PrismaService) {}
 
     async getAccount(
-        AccountWhereUniqueInput: Prisma.AccountWhereUniqueInput
+        AccountWhereUniqueInput: Prisma.AccountWhereUniqueInput,
+        include?: Prisma.AccountInclude
     ): Promise<Account | null> {
         return this.prisma.account.findUnique({
+            where: AccountWhereUniqueInput,
+            include
+        });
+    }
+
+    async checkAccount(
+        AccountWhereUniqueInput: Prisma.AccountWhereUniqueInput
+    ) {
+        const account = await this.prisma.account.findUnique({
             where: AccountWhereUniqueInput
         });
+        return !!account;
     }
 
     async getAccounts(params: {
@@ -24,18 +46,23 @@ export class AccountService implements AccountsRepository {
         orderBy?: Prisma.AccountOrderByWithRelationInput;
     }): Promise<Account[]> {
         const { skip, take, cursor, where, orderBy } = params;
-        return this.prisma.account.findMany({
+        const accounts = await this.prisma.account.findMany({
             skip,
             take,
             cursor,
             where,
             orderBy
         });
+
+        return accounts.map((account) => exclude(account, ['password']));
     }
 
     async createAccount(data: Prisma.AccountCreateInput): Promise<Account> {
         return this.prisma.account.create({
-            data
+            data,
+            include: {
+                projects: true
+            }
         });
     }
 

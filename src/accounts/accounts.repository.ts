@@ -1,18 +1,26 @@
 import { Account as AccountModel, Prisma } from '@prisma/client';
-import { AccountCreateDto, AccountUpdateDto } from 'src/dtos/Account';
+import {
+    AccountCreateDto,
+    AccountUpdateDto
+} from 'src/accounts/dto/accounts.dto';
 
 export abstract class AccountsRepository {
     abstract getAccount(
-        AccountWhereUniqueInput: Prisma.AccountWhereUniqueInput
+        AccountWhereUniqueInput: Prisma.AccountWhereUniqueInput,
+        include?: Prisma.AccountInclude
     ): Promise<AccountModel | null>;
 
-    abstract getAccounts(params: {
+    abstract checkAccount(
+        AccountWhereUniqueInput: Prisma.AccountWhereUniqueInput
+    ): Promise<boolean>;
+
+    /* abstract getAccounts(params: {
         skip?: number;
         take?: number;
         cursor?: Prisma.AccountWhereUniqueInput;
         where?: Prisma.AccountWhereInput;
         orderBy?: Prisma.AccountOrderByWithRelationInput;
-    }): Promise<AccountModel[] | null>;
+    }): Promise<AccountModel[] | null>; */
 
     abstract createAccount(data: AccountCreateDto): Promise<AccountModel>;
 

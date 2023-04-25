@@ -1,7 +1,7 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'nestjs-zod/z';
 
-const ServiceCreateSchema = z.object({
+export const OrderCreateSchema = z.object({
     name: z.string().min(1),
     date: z.date().optional(),
     price: z.number().min(0).optional(),
@@ -28,10 +28,10 @@ const ServiceCreateSchema = z.object({
     projectId: z.string().cuid()
 });
 
-const ServiceUpdateSchema = ServiceCreateSchema.partial().omit({
+export const OrderUpdateSchema = OrderCreateSchema.partial().omit({
     projectId: true
 });
 
 // class is required for using DTO as a type
-export class ServiceCreateDto extends createZodDto(ServiceCreateSchema) {}
-export class ServiceUpdateDto extends createZodDto(ServiceUpdateSchema) {}
+export class OrderCreateDto extends createZodDto(OrderCreateSchema) {}
+export class OrderUpdateDto extends createZodDto(OrderUpdateSchema) {}

@@ -15,48 +15,106 @@ model Account {
     password  String
     image_url String?
 
+    plan Plan @default(free) // ['free', 'premium', 'enterprise',' insider]
+
+    name      String
+    phone     String?
+    birthDate DateTime?
+    gender    String?
+
+    projects          Project[]
+    selectedProjectId String?
+
+    createdAt DateTime @default(now())
+
+    @@map("accounts")
+}
+
+model CostumerAccount {
+    id        String  @id @default(cuid())
+    email     String  @unique
+    password  String?
+    image_url String?
+
     name     String
     phone    String?
     birthday DateTime?
     gender   String?
-    pin      String    @unique
 
-    projects  Project[]
-    createdAt DateTime  @default(now())
+    Clients   Client[]
+    createdAt DateTime @default(now())
 
-    @@map("accounts")
+    reportedProjects Project[] @relation("reportedProjects")
+
+    @@map("costumer_accounts")
 }
 
 model Project {
     id        String   @id @default(cuid())
     createdAt DateTime @default(now())
 
+    // Security
+    isVerified Boolean           @default(false)
+    reports    CostumerAccount[] @relation("reportedProjects")
+
+    // Basic Info
     name            String
     socialReason    String
-    juridicalPerson String @unique
-    email           String
+    juridicalPerson String?   @unique
+    //segments        String? // ['food', 'health', 'education', 'beauty', 'construction', 'technology', 'entertainment', 'other']
+    segments        Segment[]
 
-    logo_url             String?
-    digitalSignature_url String?
-
-    address   String
-    phone1    String
-    phone2    String?
-    website   String?
-    instagram String?
-    facebook  String?
-    twitter   String?
-    tiktok    String?
-
-    bankAccount String?
-    pixKey      String?
-
+    // Additional Info
     defaultAdditionalInfo  String?
     defaultWarrantyDetails String?
 
-    clients   Client[]
-    services  Service[]
-    materials Material[]
+    defaultOrderString   OrderType   @default(order) // ['order', 'service']
+    defaultProductString ProductType @default(product) // ['product', 'service']
+
+    digitalSignature_url String?
+
+    // Service
+    businessModel             String? // ['in_person', 'online', 'delivery']
+    agenda                    String  @default("sunday,monday,tuesday,wednesday,thursday,friday,saturday")
+    autoHolidayUnavailability Boolean @default(false)
+    busyAmount                Int     @default(1)
+    unavailableAmount         Int     @default(3)
+    serviceZoneCountries      String?
+    serviceZoneStates         String?
+    serviceZoneCities         String?
+
+    // Contact
+    email       String? @unique
+    phone1      String
+    phone2      String?
+    website     String?
+    socialMedia Json?
+
+    // Branding
+    logo_url       String?
+    banner_url     String?
+    primaryColor   String?
+    secondaryColor String?
+
+    marketplaceData Json? // {slogan, at, about, description, keywords, tags, images, videos, links}
+
+    // Address
+    address Json?
+
+    // Payments
+    defaultPaymentMethods String? // ['Boleto', 'Dinheiro', 'Transferência Bancária', 'Cartão de Crédito', 'Cartão de Débito', 'Pix']
+    currency              Currency @default(BRL)
+    bankAccount           Json?
+    pix                   Json?
+
+    // Relations
+    orders     Order[]
+    categories Category[]
+
+    // Catalog
+    catalogedMaterials Material[]
+    catalogedProducts  Product[]
+    catalogedClients   Client[]   @relation("onCatalogProjects")
 
     account   Account @relation(fields: [accountId], references: [id])
     accountId String
@@ -65,13 +123,82 @@ model Project {
     @@map("projects")
 }
 
-model Service {
+model SegmentCategory {
+    id        String   @id @default(uuid())
+    createdAt DateTime @default(now())
+
+    name     String
+    segments Segment[]
+
+    @@map("segment_categories")
+}
+
+model Segment {
+    id        String   @id @default(uuid())
+    createdAt DateTime @default(now())
+
+    name     String
+    projects Project[]
+
+    category          SegmentCategory @relation(fields: [segmentCategoryId], references: [id])
+    segmentCategoryId String
+
+    @@index([segmentCategoryId])
+    @@map("segments")
+}
+
+model Category {
+    id        String   @id @default(uuid())
+    createdAt DateTime @default(now())
+
+    name  String
+    icon  String
+    color String
+
+    projects Project[]
+
+    @@map("categories")
+}
+
+enum ProductType {
+    service
+    product
+}
+
+enum OrderType {
+    service
+    order
+}
+
+enum Currency {
+    BRL
+    USD
+    EUR
+    JPY
+    GBP
+    AUD
+    CAD
+    CHF
+    CNY
+    SEK
+    NZD
+    MXN
+    SGD
+    HKD
+    NOK
+    KRW
+    TRY
+    RUB
+    INR
+}
+
+model Order {
     id        String   @id @default(cuid())
     createdAt DateTime @default(now())
 
     name   String
     date   DateTime?
-    status ServiceStatus @default(pending) // ['pending', 'archived', 'awaiting_payment', 'warranty', 'concluded', 'cancelled']
+    status OrderStatus @default(pending) // ['pending', 'archived', 'awaiting_payment', 'warranty', 'concluded', 'cancelled']
 
     additionalInfo String?
 
@@ -80,8 +207,13 @@ model Service {
     paymentMethods   String? // ['Boleto', 'Dinheiro', 'Transferência Bancária', 'Cartão de Crédito', 'Cartão de Débito', 'Pix']
 
     // Split Values (for card and agreement payment)
-    splitInitialValue String? // ex: 50% (para valores com porcentagem) e 50 (para valores cheios)
-    splitValue        String?
+    splitValue String?
+    // pode ser:
+    // 1. parcelas: do cartão quando NÃO há valor restante do acordo (splitRemaining)
+    // 2. valor inicial do acordo em dinheiro: quando NÃO HÁ símbolos no valor (ex: número inteiro ['462'], '1/3' ou '1/2')
+    // 3. valor inicial do acordo em porcentagem: quando há o símbolo de (%) no valor
+
+    splitRemaining String? // pode ser 'parcelas' (ex: 2x, 3x) ou 'valor restante do acordo' ('remaining')
 
     // Warranty
     warrantyPeriod  Int     @default(90)
@@ -97,20 +229,28 @@ model Service {
     project   Project @relation(fields: [projectId], references: [id])
     projectId String
 
-    subServices SubService[]
+    products  Product[]
+    materials Material[]
 
     @@index([projectId])
     @@index([clientId])
-    @@map("services")
+    @@map("orders")
 }
 
-enum ServiceStatus {
+enum OrderStatus {
     pending
     archived
     awaiting_payment
     warranty
     concluded
     cancelled
+}
+
+enum Plan {
+    free
+    premium
+    enterprise
+    insider
 }
 
 enum PaymentCondition {
@@ -123,22 +263,26 @@ model Client {
     id        String   @id @default(cuid())
     createdAt DateTime @default(now())
 
-    name      String
+    name      String?
     image_url String?
     phone     String?
     email     String?
     address   String?
 
-    project   Project @relation(fields: [projectId], references: [id])
+    costumerAccount   CostumerAccount? @relation(fields: [costumerAccountId], references: [id])
+    costumerAccountId String?
+
+    project   Project @relation(fields: [projectId], references: [id], name: "onCatalogProjects")
     projectId String
 
-    services Service[]
+    orders Order[]
 
     @@index([projectId])
+    @@index([costumerAccountId])
     @@map("clients")
 }
 
-model SubService {
+model Product {
     id        String   @id @default(cuid())
     createdAt DateTime @default(now())
 
@@ -146,11 +290,15 @@ model SubService {
     description String
     price       Float
 
-    service   Service @relation(fields: [serviceId], references: [id])
-    serviceId String
+    order   Order  @relation(fields: [orderId], references: [id])
+    orderId String
 
-    @@index([serviceId])
-    @@map("sub_services")
+    projectWithBookmark Project? @relation(fields: [projectId], references: [id])
+    projectId           String?
+
+    @@index([projectId])
+    @@index([orderId])
+    @@map("products")
 }
 
 model Material {
@@ -166,9 +314,13 @@ model Material {
     availability Boolean @default(true)
     bookmarked   Boolean @default(false)
 
-    project   Project @relation(fields: [projectId], references: [id])
-    projectId String
+    order   Order  @relation(fields: [orderId], references: [id])
+    orderId String
+
+    projectWithBookmark Project? @relation(fields: [projectId], references: [id])
+    projectId           String?
 
     @@index([projectId])
+    @@index([orderId])
     @@map("materials")
 }

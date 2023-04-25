@@ -1,41 +1,44 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 
-import { PrismaService } from './database/prisma.service';
-
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ZodValidationPipe } from 'nestjs-zod';
-import { APP_PIPE } from '@nestjs/core';
+import { APP_GUARD, APP_PIPE } from '@nestjs/core';
 
-import { AccountsRepository } from './repositories/accounts.repository';
-import { AccountService } from './repositories/services/account.service';
+import { AuthGuard } from './auth/auth.guard';
+import { AuthModule } from './auth/auth.module';
 
-import { ServicesRepository } from './repositories/services.repository';
-import { ServiceService } from './repositories/services/service.service';
-
-import { ProjectsRepository } from './repositories/projects.repository';
-import { ProjectService } from './repositories/services/project.service';
+import { AccountsModule } from './accounts/accounts.module';
+import { ProjectsModule } from './projects/projects.module';
+import { OrdersModule } from './orders/orders.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
-    imports: [],
+    imports: [
+        ThrottlerModule.forRoot({
+            ttl: 60, // the "time to live" for each record
+            limit: 10 // the maximum number of requests to be permitted in the given interval (ttl)
+        }),
+        AccountsModule,
+        ProjectsModule,
+        OrdersModule,
+        AuthModule,
+        PrismaModule
+    ],
     controllers: [AppController],
     providers: [
-        PrismaService,
         {
             provide: APP_PIPE,
             useClass: ZodValidationPipe
         },
         {
-            provide: AccountsRepository,
-            useClass: AccountService
-        },
-        {
-            provide: ServicesRepository,
-            useClass: ServiceService
-        },
-        {
-            provide: ProjectsRepository,
-            useClass: ProjectService
+            provide: APP_GUARD,
+            useClass: ThrottlerGuard
         }
+        /* {
+            provide: APP_GUARD,
+            useClass: AuthGuard
+        } */
     ]
 })
 export class AppModule {}

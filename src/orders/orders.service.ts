@@ -1,31 +1,31 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
-import { PaymentCondition, Prisma, Service } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import { PaymentCondition, Prisma, Order } from '@prisma/client';
 
-import { ServicesRepository } from '../services.repository';
-import { ServiceCreateDto, ServiceUpdateDto } from 'src/dtos/Service';
+import { OrdersRepository } from './orders.repository';
+import { OrderCreateDto, OrderUpdateDto } from 'src/orders/dto/orders.dto';
 
 @Injectable()
-export class ServiceService implements ServicesRepository {
+export class OrdersService implements OrdersRepository {
     constructor(private prisma: PrismaService) {}
 
-    async getService(
-        ServiceWhereUniqueInput: Prisma.ServiceWhereUniqueInput
-    ): Promise<Service | null> {
-        return this.prisma.service.findUnique({
-            where: ServiceWhereUniqueInput
+    async getOrder(
+        OrderWhereUniqueInput: Prisma.OrderWhereUniqueInput
+    ): Promise<Order | null> {
+        return this.prisma.order.findUnique({
+            where: OrderWhereUniqueInput
         });
     }
 
-    async getServices(params: {
+    async getOrders(params: {
         skip?: number;
         take?: number;
-        cursor?: Prisma.ServiceWhereUniqueInput;
-        where?: Prisma.ServiceWhereInput;
-        orderBy?: Prisma.ServiceOrderByWithRelationInput;
-    }): Promise<Service[]> {
+        cursor?: Prisma.OrderWhereUniqueInput;
+        where?: Prisma.OrderWhereInput;
+        orderBy?: Prisma.OrderOrderByWithRelationInput;
+    }): Promise<Order[]> {
         const { skip, take, cursor, where, orderBy } = params;
-        return this.prisma.service.findMany({
+        return this.prisma.order.findMany({
             skip,
             take,
             cursor,
@@ -34,10 +34,10 @@ export class ServiceService implements ServicesRepository {
         });
     }
 
-    async createService(data: ServiceCreateDto): Promise<Service> {
+    async createOrder(data: OrderCreateDto): Promise<Order> {
         const { clientId, projectId, paymentCondition, ...rest } = data;
 
-        return this.prisma.service.create({
+        return this.prisma.order.create({
             data: {
                 ...rest,
                 paymentCondition: paymentCondition
@@ -52,15 +52,15 @@ export class ServiceService implements ServicesRepository {
         });
     }
 
-    async updateService(params: {
-        where: Prisma.ServiceWhereUniqueInput;
-        data: ServiceUpdateDto;
-    }): Promise<Service> {
+    async updateOrder(params: {
+        where: Prisma.OrderWhereUniqueInput;
+        data: OrderUpdateDto;
+    }): Promise<Order> {
         const { where, data } = params;
 
         const { clientId, paymentCondition, ...rest } = data;
 
-        return this.prisma.service.update({
+        return this.prisma.order.update({
             data: {
                 ...rest,
                 paymentCondition: paymentCondition
@@ -76,8 +76,8 @@ export class ServiceService implements ServicesRepository {
         });
     }
 
-    async deleteService(where: Prisma.ServiceWhereUniqueInput): Promise<void> {
-        await this.prisma.service.delete({
+    async deleteOrder(where: Prisma.OrderWhereUniqueInput): Promise<void> {
+        await this.prisma.order.delete({
             where
         });
     }

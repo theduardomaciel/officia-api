@@ -1,5 +1,8 @@
 import { Prisma, Project as ProjectModel } from '@prisma/client';
-import { ProjectCreateDto, ProjectUpdateDto } from 'src/dtos/Project';
+import {
+    ProjectCreateDto,
+    ProjectUpdateDto
+} from 'src/projects/dto/projects.dto';
 
 export abstract class ProjectsRepository {
     abstract getProject(
