@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 
 import { FastifyRequest } from 'fastify';
-import { AuthService } from './auth.service';
+import { AuthService } from '../auth.service';
 
 import { Reflector } from '@nestjs/core';
 
@@ -39,9 +39,11 @@ export class AuthGuard implements CanActivate {
         try {
             const payload = await this.authService.validate(token);
 
-            // 💡 We're assigning the payload to the request object here
-            // so that we can access it in our route handlers
-            request['account'] = payload;
+            if (payload) {
+                // 💡 We're assigning the payload to the request object here
+                // so that we can access it in our route handlers
+                request['account'] = payload;
+            }
         } catch {
             throw new UnauthorizedException();
         }

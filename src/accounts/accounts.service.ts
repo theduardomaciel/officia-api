@@ -38,7 +38,17 @@ export class AccountsService implements AccountsRepository {
         return !!account;
     }
 
-    async getAccounts(params: {
+    async findUnique(
+        where: Prisma.AccountWhereUniqueInput,
+        include?: Prisma.AccountInclude
+    ): Promise<Account | null> {
+        return this.prisma.account.findUnique({
+            where,
+            include
+        });
+    }
+
+    /* async getAccounts(params: {
         skip?: number;
         take?: number;
         cursor?: Prisma.AccountWhereUniqueInput;
@@ -55,7 +65,7 @@ export class AccountsService implements AccountsRepository {
         });
 
         return accounts.map((account) => exclude(account, ['password']));
-    }
+    } */
 
     async createAccount(data: Prisma.AccountCreateInput): Promise<Account> {
         return this.prisma.account.create({

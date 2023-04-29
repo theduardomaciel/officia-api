@@ -6,7 +6,8 @@ import {
     Body,
     Put,
     Param,
-    Delete
+    Delete,
+    Patch
 } from '@nestjs/common';
 
 import { UseZodGuard } from 'nestjs-zod';
@@ -40,7 +41,7 @@ export class OrdersController {
         return await this.ordersRepository.createOrder(userData);
     }
 
-    @Put('order/:id')
+    @Patch('order/:id')
     @UseZodGuard('body', OrderUpdateSchema)
     async updateOrder(
         @Param('id') id: string,

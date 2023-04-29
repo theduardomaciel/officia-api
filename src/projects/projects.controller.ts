@@ -8,10 +8,12 @@ import {
     Param,
     Delete,
     HttpException,
-    HttpStatus
+    HttpStatus,
+    Patch
 } from '@nestjs/common';
 
 import { UseZodGuard } from 'nestjs-zod';
+import { Public } from 'src/auth/guards/auth.guard';
 
 import { ProjectsRepository } from './projects.repository';
 import {
@@ -20,6 +22,7 @@ import {
     ProjectUpdateDto,
     ProjectUpdateSchema
 } from './dto/projects.dto';
+
 import {
     ApiCreatedResponse,
     ApiForbiddenResponse,
@@ -32,7 +35,15 @@ import {
 export class ProjectsController {
     constructor(private readonly projectsRepository: ProjectsRepository) {}
 
-    @Get('project/:id')
+    @Public()
+    @Get('segments')
+    @ApiOperation({ summary: 'Get all segments categories' })
+    @ApiOkResponse({ description: 'Return all segments categories' })
+    async getSegments() {
+        return await this.projectsRepository.getSegments();
+    }
+
+    @Get(':id')
     @ApiOperation({ summary: 'Get a project by id' })
     @ApiOkResponse({ description: 'Return a project by id' })
     @ApiNotFoundResponse({ description: 'Project not found' })
@@ -41,7 +52,7 @@ export class ProjectsController {
         return await this.projectsRepository.getProject({ id: id });
     }
 
-    @Get('project')
+    @Get()
     @ApiOperation({
         summary: 'Get all projects or take an specified amount with query.'
     })
@@ -56,7 +67,7 @@ export class ProjectsController {
         });
     }
 
-    @Post('project')
+    @Post()
     @ApiOperation({ summary: 'Create a project' })
     @ApiCreatedResponse({ description: 'Return the created project' })
     @ApiForbiddenResponse({ description: 'Forbidden' })
@@ -68,7 +79,7 @@ export class ProjectsController {
         return await this.projectsRepository.createProject(userData);
     }
 
-    @Put('project/:id')
+    @Patch(':id')
     @ApiOperation({ summary: 'Update a project' })
     @ApiOkResponse({ description: 'Return the updated project' })
     @ApiNotFoundResponse({ description: 'Project not found' })
@@ -87,7 +98,7 @@ export class ProjectsController {
         });
     }
 
-    @Delete('project/:id')
+    @Delete(':id')
     @ApiOperation({ summary: 'Delete a project' })
     @ApiOkResponse({ description: 'Return void' })
     @ApiNotFoundResponse({ description: 'Project not found' })

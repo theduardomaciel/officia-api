@@ -21,7 +21,7 @@ export const AccountCreateSchema = z.object({
     gender: z.enum(['male', 'female', 'other']).optional()
 });
 
-export const AccountUpdateSchema = AccountCreateSchema.partial().and(
+export const AccountSchema = AccountCreateSchema.partial().and(
     z.object({
         selectedProjectId: z.string().cuid().optional()
     })
@@ -29,10 +29,17 @@ export const AccountUpdateSchema = AccountCreateSchema.partial().and(
 
 // class is required for using DTO as a type
 export class AccountCreateDto extends createZodDto(AccountCreateSchema) {}
-export class AccountUpdateDto extends createZodDto(AccountUpdateSchema) {}
+export class AccountDto extends createZodDto(AccountSchema) {}
 
 export const AccountCheckSchema = z.object({
     email: z.string().email()
 });
 
 export class AccountCheckDto extends createZodDto(AccountCheckSchema) {}
+
+export const AccountSignInSchema = z.object({
+    email: z.string().email(),
+    password: z.string()
+});
+
+export class AccountSignInDto extends createZodDto(AccountSignInSchema) {}

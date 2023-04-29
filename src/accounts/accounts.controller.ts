@@ -3,26 +3,25 @@ import {
     Get,
     Post,
     Body,
-    Put,
     Param,
     Delete,
     HttpException,
     HttpStatus,
-    HttpCode
+    Patch,
+    Query,
+    UseGuards
 } from '@nestjs/common';
 
 import {
-    AccountCheckDto,
-    AccountCheckSchema,
     AccountCreateDto,
-    AccountCreateSchema,
-    AccountUpdateDto,
-    AccountUpdateSchema
+    AccountDto,
+    AccountSchema
 } from './dto/accounts.dto';
 import { AccountsRepository } from './accounts.repository';
 
 import {
     ApiBadRequestResponse,
+    ApiCreatedResponse,
     ApiForbiddenResponse,
     ApiOkResponse,
     ApiOperation,
@@ -31,8 +30,9 @@ import {
 import { SkipThrottle } from '@nestjs/throttler';
 import { UseZodGuard } from 'nestjs-zod';
 
-import { Public } from 'src/auth/auth.guard';
+import { Public } from 'src/auth/guards/auth.guard';
 import { AuthHelper } from 'src/auth/auth.helper';
+import { MobileGuard } from 'src/auth/guards/mobile.guard';
 
 @SkipThrottle(false)
 @Controller('accounts')
@@ -42,60 +42,26 @@ export class AccountsController {
         private readonly authHelper: AuthHelper
     ) {}
 
-    @ApiOperation({ summary: 'Get account by id' })
-    @ApiResponse({ status: 200, description: 'Return account by id' })
-    @ApiResponse({ status: 404, description: 'Account not found' })
-    @ApiResponse({ status: 403, description: 'Forbidden' })
-    @Get('account/:id')
-    async getAccount(@Param('id') id: string) {
-        const response = await this.accountsRepository.getAccount({ id });
-        if (response) {
-            return response;
-        } else {
-            throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
-        }
-    }
-
-    @Post('account/check')
+    /* AUTHENTICATION */
     @Public()
-    @ApiOperation({ summary: 'Check if account exists' })
-    @ApiResponse({
-        status: 200,
-        description:
-            'Returns a true boolean indicating if an account was found with the provided data'
-    })
-    @ApiBadRequestResponse({ description: 'Bad Request.' })
-    @ApiResponse({ status: 404, description: 'Account not found.' })
-    @UseZodGuard('body', AccountCheckSchema)
-    @HttpCode(200)
-    async checkAccount(@Body() body: AccountCheckDto) {
-        if (!body)
-            throw new HttpException('No data provided', HttpStatus.BAD_REQUEST);
-        return await this.accountsRepository.checkAccount({
-            email: body.email
-        });
-    }
-
-    @Post('account')
+    @Post()
     @SkipThrottle(true)
     @ApiOperation({
         summary:
-            'Authenticates the user account, logging or creating a new account, while returning a access_token that provides api access.'
+            'Authenticates the user account, logging or creating a new account, while returning an access_token that provides api access.'
     })
-    @ApiResponse({
-        status: 200,
-        description:
-            'Returns an account object with a access_token property that provides api access.'
-    })
-    @ApiForbiddenResponse({ description: 'Forbidden.' })
+    @ApiCreatedResponse({ description: 'Returns the account logged/created.' })
     @ApiBadRequestResponse({ description: 'Bad Request.' })
-    @UseZodGuard('body', AccountCreateSchema)
+    @UseZodGuard('body', AccountSchema)
     async authenticate(
         @Body()
-        userData: AccountCreateDto
+        userData: AccountDto
     ) {
-        if (!userData)
-            throw new HttpException('No data provided', HttpStatus.BAD_REQUEST);
+        if (!userData || !userData.email || !userData.password)
+            throw new HttpException(
+                'No enough data provided',
+                HttpStatus.BAD_REQUEST
+            );
 
         const account = await this.accountsRepository.getAccount(
             {
@@ -106,11 +72,19 @@ export class AccountsController {
 
         if (account) {
             const isPasswordValid = this.authHelper.isPasswordValid(
-                account.password,
-                userData.password
+                userData.password,
+                account.password
             );
             if (isPasswordValid) {
-                return account;
+                const access_token = await this.authHelper.generateToken(
+                    account.id,
+                    account.email
+                );
+
+                return {
+                    body: account,
+                    access_token
+                };
             } else {
                 throw new HttpException(
                     'Wrong or invalid password',
@@ -118,20 +92,47 @@ export class AccountsController {
                 );
             }
         } else {
-            if (!userData) {
+            try {
+                const { password, ...rest } = userData as AccountCreateDto;
+                const hashedPassword = this.authHelper.encodePassword(password);
+
+                const newAccount = await this.accountsRepository.createAccount({
+                    ...rest,
+                    password: hashedPassword
+                });
+
+                const access_token = await this.authHelper.generateToken(
+                    newAccount.id,
+                    newAccount.email
+                );
+
+                return {
+                    body: newAccount,
+                    access_token
+                };
+            } catch (error) {
+                console.log(error);
                 throw new HttpException(
-                    'No data provided',
-                    HttpStatus.BAD_REQUEST
+                    'Error creating account. You may not have provided all the required data.',
+                    HttpStatus.INTERNAL_SERVER_ERROR
                 );
             }
-
-            return await this.accountsRepository.createAccount({
-                ...userData
-            });
         }
     }
 
-    @Put('account/:id')
+    @Get()
+    @Public()
+    @UseGuards(MobileGuard)
+    @ApiOperation({ summary: 'Get query specified account.' })
+    @ApiOkResponse({ description: 'Returns the desired account.' })
+    @ApiForbiddenResponse({ description: 'Forbidden.' })
+    async getAccounts(@Query('email') email: string) {
+        return await this.accountsRepository.findUnique({
+            email
+        });
+    }
+
+    @Patch(':id')
     @ApiOperation({ summary: 'Updates an account with the given id.' })
     @ApiResponse({
         status: 200,
@@ -142,11 +143,8 @@ export class AccountsController {
         status: 404,
         description: 'Account not found with the given id.'
     })
-    @UseZodGuard('body', AccountUpdateSchema)
-    async updateAccount(
-        @Param('id') id: string,
-        @Body() userData: AccountUpdateDto
-    ) {
+    @UseZodGuard('body', AccountDto)
+    async updateAccount(@Param('id') id: string, @Body() userData: AccountDto) {
         if (!id) {
             throw new HttpException('No id provided', HttpStatus.BAD_REQUEST);
         }
@@ -156,7 +154,7 @@ export class AccountsController {
         });
     }
 
-    @Delete('account/:id')
+    @Delete(':id')
     @ApiOperation({ summary: 'Deletes an account with the given id.' })
     @ApiOkResponse({ description: 'Returns void if the account was deleted.' })
     @ApiResponse({

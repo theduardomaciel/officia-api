@@ -12,6 +12,35 @@ import {
 export class ProjectsService implements ProjectsRepository {
     constructor(private prisma: PrismaService) {}
 
+    async getSegments() {
+        const categories = await this.prisma.segmentCategory.findMany({
+            include: {
+                segments: true
+            }
+        });
+
+        const segmentsWithoutCategories = await this.prisma.segment.findMany({
+            where: {
+                segmentCategoryId: null
+            }
+        });
+
+        const segments = [
+            ...categories.map((category) => {
+                return {
+                    name: category.name,
+                    segments: category.segments
+                };
+            }),
+            {
+                name: 'Outros',
+                segments: segmentsWithoutCategories
+            }
+        ];
+
+        return segments;
+    }
+
     async getProject(
         ProjectWhereUniqueInput: Prisma.ProjectWhereUniqueInput
     ): Promise<Project | null> {
@@ -38,37 +67,17 @@ export class ProjectsService implements ProjectsRepository {
     }
 
     async createProject(data: ProjectCreateDto): Promise<Project> {
-        const {
-            businessModel: businessModelArray,
-            agenda: agendaArray,
-            serviceZoneCountries: serviceZoneCountriesArray,
-            serviceZoneStates: serviceZoneStatesArray,
-            serviceZoneCities: serviceZoneCitiesArray,
-            segmentsData,
-            ...rest
-        } = data;
-
-        const businessModel = businessModelArray?.join(',');
-        const agenda = agendaArray?.join(',');
-
-        const serviceZoneCountries = serviceZoneCountriesArray?.join(',');
-        const serviceZoneStates = serviceZoneStatesArray?.join(',');
-        const serviceZoneCities = serviceZoneCitiesArray?.join(',');
+        const { segmentsData, ...rest } = data;
 
         return this.prisma.project.create({
             data: {
                 ...rest,
-                businessModel,
-                agenda,
-                serviceZoneCountries,
-                serviceZoneStates,
-                serviceZoneCities,
                 segments: {
                     connectOrCreate: segmentsData?.map((json) => {
                         const segment = json as unknown as Segment;
                         return {
                             where: {
-                                id: segment.id
+                                name: segment.name
                             },
                             create: segment
                         };
@@ -84,36 +93,12 @@ export class ProjectsService implements ProjectsRepository {
     }): Promise<Project> {
         const {
             where,
-            data: {
-                businessModel: businessModelArray,
-                agenda: agendaArray,
-                serviceZoneCountries: serviceZoneCountriesArray,
-                serviceZoneStates: serviceZoneStatesArray,
-                serviceZoneCities: serviceZoneCitiesArray,
-                defaultPaymentMethods: defaultPaymentMethodsArray,
-                segmentsData,
-                ...rest
-            }
+            data: { segmentsData, ordersIds, categoriesIds, ...rest }
         } = params;
-
-        const businessModel = businessModelArray?.join(',');
-        const agenda = agendaArray?.join(',');
-
-        const serviceZoneCountries = serviceZoneCountriesArray?.join(',');
-        const serviceZoneStates = serviceZoneStatesArray?.join(',');
-        const serviceZoneCities = serviceZoneCitiesArray?.join(',');
-
-        const defaultPaymentMethods = defaultPaymentMethodsArray?.join(',');
 
         return this.prisma.project.update({
             data: {
                 ...rest,
-                businessModel,
-                agenda,
-                serviceZoneCountries,
-                serviceZoneStates,
-                serviceZoneCities,
-                defaultPaymentMethods,
                 segments: {
                     connectOrCreate: segmentsData?.map((json) => {
                         const segment = json as unknown as Segment;

@@ -1,3 +1,3 @@
 export abstract class AuthRepository {
-    abstract verify(email: string): Promise<string>;
+    abstract verifyEmail(email: string): Promise<string>;
 }

@@ -8,18 +8,22 @@ export class AuthHelper {
     constructor(@Inject(JwtService) private jwtService: JwtService) {}
 
     // Generate JWT token
-    public async generateToken(email: string): Promise<string> {
-        return await this.jwtService.signAsync({
-            email: email
-        });
+    public async generateToken(id: string, email: string): Promise<string> {
+        return await this.jwtService.signAsync(
+            {
+                id: id,
+                email: email
+            },
+            { secret: process.env.AUTH_SECRET }
+        );
     }
 
     // Decoding JWT token
-    public async decode(token: string): Promise<any> {
+    public async decodeToken(token: string): Promise<any> {
         return this.jwtService.decode(token);
     }
 
-    public async verify(token: string): Promise<boolean> {
+    public async verifyToken(token: string): Promise<boolean> {
         try {
             await this.jwtService.verify(token, {
                 secret: process.env.AUTH_SECRET

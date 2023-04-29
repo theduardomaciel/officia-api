@@ -5,7 +5,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { APP_GUARD, APP_PIPE } from '@nestjs/core';
 
-import { AuthGuard } from './auth/auth.guard';
+import { AuthGuard } from './auth/guards/auth.guard';
 import { AuthModule } from './auth/auth.module';
 
 import { AccountsModule } from './accounts/accounts.module';
@@ -34,11 +34,11 @@ import { PrismaModule } from './prisma/prisma.module';
         {
             provide: APP_GUARD,
             useClass: ThrottlerGuard
-        }
-        /* {
+        },
+        {
             provide: APP_GUARD,
             useClass: AuthGuard
-        } */
+        }
     ]
 })
 export class AppModule {}

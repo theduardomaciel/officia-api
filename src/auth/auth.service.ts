@@ -9,6 +9,7 @@ import { AccountsService } from 'src/accounts/accounts.service';
 
 import { AuthRepository } from './auth.repository';
 import { AuthHelper } from './auth.helper';
+import { Account } from '@prisma/client';
 
 @Injectable()
 export class AuthService implements AuthRepository {
@@ -17,24 +18,29 @@ export class AuthService implements AuthRepository {
         private authHelper: AuthHelper
     ) {}
 
-    // Validate user from userID in decode()
+    // Validate account from accountID in decode()
     public async validateUser(decoded: { id: string }) {
         return this.accountsService.getAccount({ id: decoded.id });
     }
 
     // Validate JWT Token, throw forbidden error if JWT Token is invalid
-    public async validate(token: string): Promise<boolean | never> {
+    public async validate(token: string): Promise<Account | never> {
         try {
-            const decoded: any = this.authHelper.decode(token);
+            const isValid = await this.authHelper.verifyToken(token);
+            if (!isValid) {
+                throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+            }
 
+            const decoded: any = await this.authHelper.decodeToken(token);
             if (!decoded) {
                 throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
             }
-            const user = await this.validateUser(decoded);
-            if (!user) {
+            const account = await this.validateUser(decoded);
+            if (!account) {
                 throw new UnauthorizedException();
+            } else {
+                return account;
             }
-            return true;
         } catch (err) {
             throw new HttpException(
                 err.message.toUpperCase(),
@@ -43,7 +49,7 @@ export class AuthService implements AuthRepository {
         }
     }
 
-    async verify(email: string) {
+    async verifyEmail(email: string) {
         const code = Math.random().toString(36).substring(2, 6).toUpperCase();
 
         console.log('Email sent to: ', email);

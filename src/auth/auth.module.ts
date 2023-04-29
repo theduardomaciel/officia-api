@@ -20,7 +20,14 @@ import { JwtModule } from '@nestjs/jwt';
             }
         })
     ],
-    providers: [AuthHelper, AuthService, AuthRepository as Provider],
+    providers: [
+        AuthHelper,
+        AuthService,
+        {
+            provide: AuthRepository,
+            useClass: AuthService
+        }
+    ],
     controllers: [AuthController],
     exports: [AuthService]
 })

@@ -1,10 +1,22 @@
-import { Prisma, Project as ProjectModel } from '@prisma/client';
+import {
+    Prisma,
+    Project as ProjectModel,
+    Segment,
+    SegmentCategory
+} from '@prisma/client';
 import {
     ProjectCreateDto,
     ProjectUpdateDto
 } from 'src/projects/dto/projects.dto';
 
 export abstract class ProjectsRepository {
+    abstract getSegments(): Promise<
+        Array<{
+            name: string;
+            segments: Segment[];
+        }>
+    >;
+
     abstract getProject(
         AccountWhereUniqueInput: Prisma.ProjectWhereUniqueInput
     ): Promise<ProjectModel | null>;

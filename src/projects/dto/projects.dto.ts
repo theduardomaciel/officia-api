@@ -9,7 +9,7 @@ export const ProjectCreateSchema = z.object({
     name: z.string(),
     socialReason: z.string(),
     juridicalPerson: z.string().optional(),
-    segmentsData: z.array(z.json()).optional(),
+    segmentsData: z.array(z.json()).optional(), //
 
     // Additional Info
     defaultAdditionalInfo: z.string().optional(),
@@ -21,14 +21,9 @@ export const ProjectCreateSchema = z.object({
     digitalSignature_url: z.string().optional(),
 
     // Service
-    /* businessModel: z.string().optional(),
-    agenda: z
-        .string()
-        .optional()
-        .default('sunday,monday,tuesday,wednesday,thursday,friday,saturday'), */
     businessModel: z
         .array(z.enum(['in_person', 'online', 'delivery']))
-        .optional(),
+        .optional(), // transform to BusinessModel[]
     agenda: z
         .array(
             z.enum([
@@ -41,7 +36,7 @@ export const ProjectCreateSchema = z.object({
                 'saturday'
             ])
         )
-        .optional(),
+        .optional(), // transform to WeekDay[]
     autoHolidayUnavailability: z.boolean().optional(),
     busyAmount: z.number().optional(),
     unavailableAmount: z.number().optional(),
@@ -84,13 +79,13 @@ export const ProjectUpdateSchema = ProjectCreateSchema.partial().and(
             pix: z.json().optional(),
 
             // Relations
-            ordersIds: z.array(z.string().cuid()).optional(),
-            categoriesIds: z.array(z.string().cuid()).optional(),
+            ordersIds: z.array(z.string().cuid()).optional(), //
+            categoriesIds: z.array(z.string().cuid()).optional(), //
 
             // Catalog
-            catalogedMaterialsIds: z.array(z.string().cuid()).optional(),
-            catalogedProductsIds: z.array(z.string().cuid()).optional(),
-            catalogedClientsIds: z.array(z.string().cuid()).optional()
+            catalogedMaterialsIds: z.array(z.string().cuid()).optional(), //
+            catalogedProductsIds: z.array(z.string().cuid()).optional(), //
+            catalogedClientsIds: z.array(z.string().cuid()).optional() //
         })
         .partial()
 );

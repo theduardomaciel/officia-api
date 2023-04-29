@@ -74,14 +74,14 @@ model Project {
     digitalSignature_url String?
 
     // Service
-    businessModel             String? // ['in_person', 'online', 'delivery']
-    agenda                    String  @default("sunday,monday,tuesday,wednesday,thursday,friday,saturday")
+    businessModel             Json?   @default("[\"in_person\",\"online\",\"delivery\"]") // ['in_person', 'online', 'delivery']
+    agenda                    Json    @default("[\"sunday\",\"monday\",\"tuesday\",\"wednesday\",\"thursday\",\"friday\",\"saturday\"]")
     autoHolidayUnavailability Boolean @default(false)
     busyAmount                Int     @default(1)
     unavailableAmount         Int     @default(3)
-    serviceZoneCountries      String?
-    serviceZoneStates         String?
-    serviceZoneCities         String?
+    serviceZoneCountries      Json?   @default("[]")
+    serviceZoneStates         Json?   @default("[]")
+    serviceZoneCities         Json?   @default("[]")
 
     // Contact
     email       String? @unique
@@ -102,7 +102,7 @@ model Project {
     address Json?
 
     // Payments
-    defaultPaymentMethods String? // ['Boleto', 'Dinheiro', 'Transferência Bancária', 'Cartão de Crédito', 'Cartão de Débito', 'Pix']
+    defaultPaymentMethods Json?    @default("[]") // ['Boleto', 'Dinheiro', 'Transferência Bancária', 'Cartão de Crédito', 'Cartão de Débito', 'Pix']
     currency              Currency @default(BRL)
     bankAccount           Json?
     pix                   Json?
@@ -116,7 +116,7 @@ model Project {
     catalogedProducts  Product[]
     catalogedClients   Client[]   @relation("onCatalogProjects")
 
-    account   Account @relation(fields: [accountId], references: [id])
+    account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
     accountId String
 
     @@index([accountId])
@@ -124,24 +124,24 @@ model Project {
 }
 
 model SegmentCategory {
-    id        String   @id @default(uuid())
+    id        String   @id @unique @default(uuid())
     createdAt DateTime @default(now())
 
-    name     String
+    name     String    @unique
     segments Segment[]
 
     @@map("segment_categories")
 }
 
 model Segment {
-    id        String   @id @default(uuid())
+    id        String   @id @unique @default(uuid())
     createdAt DateTime @default(now())
 
-    name     String
+    name     String    @unique
     projects Project[]
 
-    category          SegmentCategory @relation(fields: [segmentCategoryId], references: [id])
-    segmentCategoryId String
+    category          SegmentCategory? @relation(fields: [segmentCategoryId], references: [id])
+    segmentCategoryId String?
 
     @@index([segmentCategoryId])
     @@map("segments")
