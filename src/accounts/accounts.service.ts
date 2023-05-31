@@ -88,8 +88,14 @@ export class AccountsService implements AccountsRepository {
     }
 
     async deleteAccount(where: Prisma.AccountWhereUniqueInput): Promise<void> {
-        await this.prisma.account.delete({
+        /* await this.prisma.account.delete({
             where
+        }); */
+        await this.prisma.account.update({
+            where,
+            data: {
+                disabledAt: new Date()
+            }
         });
     }
 }

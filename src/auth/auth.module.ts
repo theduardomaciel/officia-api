@@ -14,10 +14,10 @@ import { JwtModule } from '@nestjs/jwt';
         AccountsModule,
         JwtModule.register({
             global: true,
-            secret: process.env.AUTH_SECRET,
-            signOptions: {
+            secret: process.env.AUTH_SECRET
+            /* signOptions: {
                 expiresIn: '1d'
-            }
+            } */
         })
     ],
     providers: [

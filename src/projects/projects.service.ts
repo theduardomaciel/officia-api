@@ -67,24 +67,34 @@ export class ProjectsService implements ProjectsRepository {
     }
 
     async createProject(data: ProjectCreateDto): Promise<Project> {
-        const { segmentsData, ...rest } = data;
+        const { segmentsData, accountId, ...rest } = data;
 
-        return this.prisma.project.create({
-            data: {
-                ...rest,
-                segments: {
-                    connectOrCreate: segmentsData?.map((json) => {
-                        const segment = json as unknown as Segment;
-                        return {
-                            where: {
-                                name: segment.name
-                            },
-                            create: segment
-                        };
-                    })
+        try {
+            return this.prisma.project.create({
+                data: {
+                    ...rest,
+                    segments: {
+                        connectOrCreate: segmentsData?.map((json) => {
+                            const segment = json as unknown as Segment;
+                            return {
+                                where: {
+                                    name: segment.name
+                                },
+                                create: segment
+                            };
+                        })
+                    },
+                    account: {
+                        connect: {
+                            id: accountId
+                        }
+                    }
                 }
-            }
-        });
+            });
+        } catch (error) {
+            console.log(error);
+            throw error;
+        }
     }
 
     async updateProject(params: {
@@ -116,7 +126,13 @@ export class ProjectsService implements ProjectsRepository {
     }
 
     async deleteProject(where: Prisma.ProjectWhereUniqueInput): Promise<void> {
-        await this.prisma.project.delete({
+        /* await this.prisma.project.delete({
+            where
+        }); */
+        await this.prisma.project.update({
+            data: {
+                isDeleted: true
+            },
             where
         });
     }

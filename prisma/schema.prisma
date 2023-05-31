@@ -15,17 +15,19 @@ model Account {
     password  String
     image_url String?
 
-    plan Plan @default(free) // ['free', 'premium', 'enterprise',' insider]
+    planExpiresAt            DateTime?
+    isRecurringPaymentActive Boolean   @default(false)
 
-    name      String
-    phone     String?
-    birthDate DateTime?
-    gender    String?
+    name     String
+    phone    String?
+    birthday DateTime?
+    gender   String?
 
     projects          Project[]
     selectedProjectId String?
 
-    createdAt DateTime @default(now())
+    server_createdAt DateTime  @default(now())
+    disabledAt       DateTime?
 
     @@map("accounts")
 }
@@ -41,8 +43,8 @@ model CostumerAccount {
     birthday DateTime?
     gender   String?
 
-    Clients   Client[]
-    createdAt DateTime @default(now())
+    Clients          Client[]
+    server_createdAt DateTime @default(now())
 
     reportedProjects Project[] @relation("reportedProjects")
 
@@ -50,8 +52,11 @@ model CostumerAccount {
 }
 
 model Project {
-    id        String   @id @default(cuid())
-    createdAt DateTime @default(now())
+    id               String   @id @default(cuid())
+    server_createdAt DateTime @default(now())
+
+    lastModifiedAt DateTime?
+    isDeleted      Boolean   @default(false)
 
     // Security
     isVerified Boolean           @default(false)
@@ -59,7 +64,7 @@ model Project {
 
     // Basic Info
     name            String
-    socialReason    String
+    socialReason    String?
     juridicalPerson String?   @unique
     //segments        String? // ['food', 'health', 'education', 'beauty', 'construction', 'technology', 'entertainment', 'other']
     segments        Segment[]
@@ -74,7 +79,7 @@ model Project {
     digitalSignature_url String?
 
     // Service
-    businessModel             Json?   @default("[\"in_person\",\"online\",\"delivery\"]") // ['in_person', 'online', 'delivery']
+    businessModels            Json?   @default("[\"in_person\",\"online\",\"delivery\"]") // ['in_person', 'online', 'delivery']
     agenda                    Json    @default("[\"sunday\",\"monday\",\"tuesday\",\"wednesday\",\"thursday\",\"friday\",\"saturday\"]")
     autoHolidayUnavailability Boolean @default(false)
     busyAmount                Int     @default(1)
@@ -85,7 +90,7 @@ model Project {
 
     // Contact
     email       String? @unique
-    phone1      String
+    phone1      String?
     phone2      String?
     website     String?
     socialMedia Json?
@@ -124,8 +129,8 @@ model Project {
 }
 
 model SegmentCategory {
-    id        String   @id @unique @default(uuid())
-    createdAt DateTime @default(now())
+    id               String   @id @unique @default(uuid())
+    server_createdAt DateTime @default(now())
 
     name     String    @unique
     segments Segment[]
@@ -134,8 +139,8 @@ model SegmentCategory {
 }
 
 model Segment {
-    id        String   @id @unique @default(uuid())
-    createdAt DateTime @default(now())
+    id               String   @id @unique @default(uuid())
+    server_createdAt DateTime @default(now())
 
     name     String    @unique
     projects Project[]
@@ -148,8 +153,8 @@ model Segment {
 }
 
 model Category {
-    id        String   @id @default(uuid())
-    createdAt DateTime @default(now())
+    id               String   @id @default(uuid())
+    server_createdAt DateTime @default(now())
 
     name  String
     icon  String
@@ -193,8 +198,11 @@ enum Currency {
 }
 
 model Order {
-    id        String   @id @default(cuid())
-    createdAt DateTime @default(now())
+    id               String   @id @default(cuid())
+    server_createdAt DateTime @default(now())
+
+    lastModifiedAt DateTime?
+    isDeleted      Boolean   @default(false)
 
     name   String
     date   DateTime?
@@ -246,13 +254,6 @@ enum OrderStatus {
     cancelled
 }
 
-enum Plan {
-    free
-    premium
-    enterprise
-    insider
-}
-
 enum PaymentCondition {
     full
     card
@@ -260,8 +261,11 @@ enum PaymentCondition {
 }
 
 model Client {
-    id        String   @id @default(cuid())
-    createdAt DateTime @default(now())
+    id               String   @id @default(cuid())
+    server_createdAt DateTime @default(now())
+
+    lastModifiedAt DateTime?
+    isDeleted      Boolean   @default(false)
 
     name      String?
     image_url String?
@@ -283,8 +287,11 @@ model Client {
 }
 
 model Product {
-    id        String   @id @default(cuid())
-    createdAt DateTime @default(now())
+    id               String   @id @default(cuid())
+    server_createdAt DateTime @default(now())
+
+    lastModifiedAt DateTime?
+    isDeleted      Boolean   @default(false)
 
     name        String
     description String
@@ -302,8 +309,11 @@ model Product {
 }
 
 model Material {
-    id        String   @id @default(cuid())
-    createdAt DateTime @default(now())
+    id               String   @id @default(cuid())
+    server_createdAt DateTime @default(now())
+
+    lastModifiedAt DateTime?
+    isDeleted      Boolean   @default(false)
 
     name         String
     description  String?

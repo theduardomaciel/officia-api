@@ -17,13 +17,18 @@ export const AccountCreateSchema = z.object({
         .max(50)
         .describe("Account's full name separated by spaces."),
     phone: z.string().optional(),
-    birthDate: z.dateString().past(),
-    gender: z.enum(['male', 'female', 'other']).optional()
+    birthday: z.dateString().past(),
+    gender: z.enum(['male', 'female', 'other']).optional(),
+    reactivating: z.boolean().optional()
 });
 
 export const AccountSchema = AccountCreateSchema.partial().and(
     z.object({
-        selectedProjectId: z.string().cuid().optional()
+        selectedProjectId: z.string().cuid().optional(),
+        disabledAt: z.date().optional(),
+        planExpiresAt: z.date().optional(),
+        isRecurringPaymentActive: z.boolean().optional(),
+        image_url: z.string().url().optional()
     })
 );
 

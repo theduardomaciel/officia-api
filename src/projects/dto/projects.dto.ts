@@ -7,7 +7,7 @@ const ARRAY_OF_CURRENCIES = Object.values(Currency);
 export const ProjectCreateSchema = z.object({
     // Basic Info
     name: z.string(),
-    socialReason: z.string(),
+    socialReason: z.string().optional(),
     juridicalPerson: z.string().optional(),
     segmentsData: z.array(z.json()).optional(), //
 
@@ -46,7 +46,7 @@ export const ProjectCreateSchema = z.object({
 
     // Contact
     email: z.string().optional(),
-    phone1: z.string(),
+    phone1: z.string().optional(),
     phone2: z.string().optional(),
     website: z.string().optional(),
     socialMedia: z.json().optional(),

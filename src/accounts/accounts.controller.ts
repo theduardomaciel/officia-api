@@ -52,6 +52,7 @@ export class AccountsController {
     })
     @ApiCreatedResponse({ description: 'Returns the account logged/created.' })
     @ApiBadRequestResponse({ description: 'Bad Request.' })
+    @ApiForbiddenResponse({ description: 'Account disabled' })
     @UseZodGuard('body', AccountSchema)
     async authenticate(
         @Body()
@@ -71,10 +72,25 @@ export class AccountsController {
         );
 
         if (account) {
+            if (account.disabledAt) {
+                if (userData.reactivating) {
+                    await this.accountsRepository.updateAccount({
+                        where: { id: account.id },
+                        data: { disabledAt: undefined }
+                    });
+                } else {
+                    throw new HttpException(
+                        `Account disabled/${account.disabledAt.toISOString()}`,
+                        HttpStatus.FORBIDDEN
+                    );
+                }
+            }
+
             const isPasswordValid = this.authHelper.isPasswordValid(
                 userData.password,
                 account.password
             );
+
             if (isPasswordValid) {
                 const access_token = await this.authHelper.generateToken(
                     account.id,
@@ -93,7 +109,10 @@ export class AccountsController {
             }
         } else {
             try {
-                const { password, ...rest } = userData as AccountCreateDto;
+                // Meio que GAMBIARRA: Filtramos o "reactivating" para que ele não interrompa a criação da conta
+                const { password, reactivating, ...rest } =
+                    userData as AccountCreateDto;
+
                 const hashedPassword = this.authHelper.encodePassword(password);
 
                 const newAccount = await this.accountsRepository.createAccount({
@@ -104,6 +123,12 @@ export class AccountsController {
                 const access_token = await this.authHelper.generateToken(
                     newAccount.id,
                     newAccount.email
+                );
+
+                console.log(
+                    'New account created: ',
+                    newAccount.email,
+                    access_token
                 );
 
                 return {
@@ -148,6 +173,14 @@ export class AccountsController {
         if (!id) {
             throw new HttpException('No id provided', HttpStatus.BAD_REQUEST);
         }
+
+        const { password, ...rest } = userData;
+
+        if (password) {
+            const hashedPassword = this.authHelper.encodePassword(password);
+            userData = { ...rest, password: hashedPassword };
+        }
+
         return await this.accountsRepository.updateAccount({
             where: { id },
             data: userData
@@ -155,8 +188,10 @@ export class AccountsController {
     }
 
     @Delete(':id')
-    @ApiOperation({ summary: 'Deletes an account with the given id.' })
-    @ApiOkResponse({ description: 'Returns void if the account was deleted.' })
+    @ApiOperation({ summary: 'Disables an account with the given id.' })
+    @ApiOkResponse({
+        description: 'Returns true if the account was successfully disabled.'
+    })
     @ApiResponse({
         status: 404,
         description: 'Account not found with the given id.'
@@ -166,6 +201,15 @@ export class AccountsController {
         if (!id) {
             throw new HttpException('No id provided', HttpStatus.BAD_REQUEST);
         }
-        return await this.accountsRepository.deleteAccount({ id });
+
+        const disabledAccount = await this.accountsRepository.updateAccount({
+            where: { id },
+            data: { disabledAt: new Date() }
+        });
+
+        if (disabledAccount) {
+            return true;
+        }
+        /* return await this.accountsRepository.deleteAccount({ id }); */
     }
 }

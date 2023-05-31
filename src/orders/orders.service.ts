@@ -77,8 +77,14 @@ export class OrdersService implements OrdersRepository {
     }
 
     async deleteOrder(where: Prisma.OrderWhereUniqueInput): Promise<void> {
-        await this.prisma.order.delete({
+        /* await this.prisma.order.delete({
             where
+        }); */
+        await this.prisma.order.update({
+            where,
+            data: {
+                isDeleted: true
+            }
         });
     }
 }

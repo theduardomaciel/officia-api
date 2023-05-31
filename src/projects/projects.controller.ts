@@ -28,7 +28,8 @@ import {
     ApiForbiddenResponse,
     ApiNotFoundResponse,
     ApiOkResponse,
-    ApiOperation
+    ApiOperation,
+    ApiUnauthorizedResponse
 } from '@nestjs/swagger';
 
 @Controller('projects')
@@ -47,7 +48,7 @@ export class ProjectsController {
     @ApiOperation({ summary: 'Get a project by id' })
     @ApiOkResponse({ description: 'Return a project by id' })
     @ApiNotFoundResponse({ description: 'Project not found' })
-    @ApiForbiddenResponse({ description: 'Forbidden' })
+    @ApiUnauthorizedResponse({ description: 'Unauthorized' })
     async getProject(@Param('id') id: string) {
         return await this.projectsRepository.getProject({ id: id });
     }
@@ -60,7 +61,7 @@ export class ProjectsController {
         description:
             'Return all projects or take an specified amount with query.'
     })
-    @ApiForbiddenResponse({ description: 'Forbidden' })
+    @ApiUnauthorizedResponse({ description: 'Unauthorized' })
     async getProjects(@Query('take') take: string) {
         return await this.projectsRepository.getProjects({
             take: take ? Number(take) : undefined
@@ -70,20 +71,20 @@ export class ProjectsController {
     @Post()
     @ApiOperation({ summary: 'Create a project' })
     @ApiCreatedResponse({ description: 'Return the created project' })
-    @ApiForbiddenResponse({ description: 'Forbidden' })
+    @ApiUnauthorizedResponse({ description: 'Unauthorized' })
     @UseZodGuard('body', ProjectCreateSchema)
-    async createProject(@Body() userData: ProjectCreateDto) {
-        if (!userData) {
+    async createProject(@Body() body: ProjectCreateDto) {
+        if (!body) {
             throw new HttpException('No data provided', HttpStatus.BAD_REQUEST);
         }
-        return await this.projectsRepository.createProject(userData);
+        return await this.projectsRepository.createProject(body);
     }
 
     @Patch(':id')
     @ApiOperation({ summary: 'Update a project' })
     @ApiOkResponse({ description: 'Return the updated project' })
     @ApiNotFoundResponse({ description: 'Project not found' })
-    @ApiForbiddenResponse({ description: 'Forbidden' })
+    @ApiUnauthorizedResponse({ description: 'Unauthorized' })
     @UseZodGuard('body', ProjectUpdateSchema)
     async updateProject(
         @Param('id') id: string,
@@ -102,7 +103,7 @@ export class ProjectsController {
     @ApiOperation({ summary: 'Delete a project' })
     @ApiOkResponse({ description: 'Return void' })
     @ApiNotFoundResponse({ description: 'Project not found' })
-    @ApiForbiddenResponse({ description: 'Forbidden' })
+    @ApiUnauthorizedResponse({ description: 'Unauthorized' })
     async deleteProject(@Param('id') id: string): Promise<void> {
         if (!id) {
             throw new HttpException('No id provided', HttpStatus.BAD_REQUEST);
