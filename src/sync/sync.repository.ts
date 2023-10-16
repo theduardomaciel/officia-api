@@ -5,7 +5,10 @@ export abstract class SyncRepository {
         lastPulledAt,
         schemaVersion,
         migration
-    }: SyncPullDto): Promise<{ changes: Changes; timestamp: Date }>;
+    }: SyncPullDto): Promise<{ changes: Changes; timestamp: number }>;
 
-    abstract push(changes: Changes): Promise<{ timestamp: Date }>;
+    abstract push(
+        changes: Changes,
+        lastPulledAT: number
+    ): Promise<{ timestamp: number }>;
 }

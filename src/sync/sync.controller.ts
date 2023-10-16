@@ -15,7 +15,7 @@ import {
 export class SyncController {
     constructor(private readonly syncRepository: SyncRepository) {}
 
-    @Get('pull')
+    @Get()
     @ApiOperation({ summary: 'Pull changes from server' })
     @ApiOkResponse({ description: 'Changes pulled successfully' })
     @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -24,11 +24,14 @@ export class SyncController {
         return await this.syncRepository.pull({ ...query });
     }
 
-    @Post('push')
+    @Post()
     @ApiOperation({ summary: 'Push changes to server' })
     @ApiOkResponse({ description: 'Changes pushed successfully' })
     @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-    async push(@Body() body: Changes) {
-        return await this.syncRepository.push({ ...body });
+    async push(
+        @Body() body: Changes,
+        @Query('lastPulledAt') lastPulledAt: string
+    ) {
+        return await this.syncRepository.push(body, parseInt(lastPulledAt));
     }
 }
