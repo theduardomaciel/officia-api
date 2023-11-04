@@ -1,4 +1,4 @@
-generator client {
+generator Client {
     provider = "prisma-client-js"
 }
 
@@ -10,90 +10,61 @@ datasource db {
 }
 
 model Account {
-    id        String  @id @default(cuid())
-    email     String  @unique
-    password  String
-    image_url String?
+    id              String   @id @default(cuid())
+    serverCreatedAt DateTime @default(now())
+    lastModifiedAt  DateTime @default(now()) @updatedAt
+    isDeleted       Boolean  @default(false)
 
-    planExpiresAt            DateTime?
-    isRecurringPaymentActive Boolean   @default(false)
+    email    String  @unique
+    password String
+    imageUrl String?
 
     name     String
     phone    String?
     birthday DateTime?
-    gender   String?
+    gender   Gender?
 
-    projects          Project[]
-    selectedProjectId String?
+    project Project?
 
-    server_createdAt DateTime  @default(now())
-    disabledAt       DateTime?
+    // Subscription
+    subscriptionId           String?
+    subscriptionExpiresAt    DateTime?
+    isRecurringPaymentActive Boolean   @default(false)
 
     @@map("accounts")
 }
 
-model CostumerAccount {
-    id        String  @id @default(cuid())
-    email     String  @unique
-    password  String?
-    image_url String?
-
-    name     String
-    phone    String?
-    birthday DateTime?
-    gender   String?
-
-    Clients          Client[]
-    server_createdAt DateTime @default(now())
-
-    reportedProjects Project[] @relation("reportedProjects")
-
-    @@map("costumer_accounts")
+enum Gender {
+    MALE
+    FEMALE
+    OTHER
 }
 
 model Project {
-    id               String   @id @default(cuid())
-    server_createdAt DateTime @default(now())
-
-    lastModifiedAt DateTime?
-    isDeleted      Boolean   @default(false)
-
-    // Security
-    isVerified Boolean           @default(false)
-    reports    CostumerAccount[] @relation("reportedProjects")
+    id              String   @id @default(cuid())
+    serverCreatedAt DateTime @default(now())
+    lastModifiedAt  DateTime @default(now()) @updatedAt
+    isDeleted       Boolean  @default(false)
 
     // Basic Info
-    name            String
+    name            String?
     socialReason    String?
-    juridicalPerson String?   @unique
-    //segments        String? // ['food', 'health', 'education', 'beauty', 'construction', 'technology', 'entertainment', 'other']
-    segments        Segment[]
+    juridicalPerson String? @unique
+
+    segments   Segment[]
+    categories Category[]
 
     // Additional Info
     defaultAdditionalInfo  String?
     defaultWarrantyDetails String?
 
-    defaultOrderString   OrderType   @default(order) // ['order', 'service']
-    defaultProductString ProductType @default(product) // ['product', 'service']
+    defaultOrderString   OrderType   @default(ORDER) // ['order', 'service']
+    defaultProductString ProductType @default(PRODUCT) // ['product', 'service']
 
     digitalSignature_url String?
 
-    // Service
-    businessModels            Json?   @default("[\"in_person\",\"online\",\"delivery\"]") // ['in_person', 'online', 'delivery']
-    agenda                    Json    @default("[\"sunday\",\"monday\",\"tuesday\",\"wednesday\",\"thursday\",\"friday\",\"saturday\"]")
-    autoHolidayUnavailability Boolean @default(false)
-    busyAmount                Int     @default(1)
-    unavailableAmount         Int     @default(3)
-    serviceZoneCountries      Json?   @default("[]")
-    serviceZoneStates         Json?   @default("[]")
-    serviceZoneCities         Json?   @default("[]")
-
-    // Contact
-    email       String? @unique
-    phone1      String?
-    phone2      String?
-    website     String?
-    socialMedia Json?
+    // Marketplace
+    marketplace Marketplace?
 
     // Branding
     logo_url       String?
@@ -101,36 +72,179 @@ model Project {
     primaryColor   String?
     secondaryColor String?
 
-    marketplaceData Json? // {slogan, at, about, description, keywords, tags, images, videos, links}
+    // Contact
+    email       String?
+    phone1      String?
+    phone2      String?
+    website     String?
+    socialMedia Json?   @default("[]") // ['facebook', 'instagram', 'twitter', 'linkedin', 'youtube', 'tiktok', 'pinterest', 'whatsapp', 'telegram']
 
     // Address
-    address Json?
+    address Address?
 
     // Payments
-    defaultPaymentMethods Json?    @default("[]") // ['Boleto', 'Dinheiro', 'Transferência Bancária', 'Cartão de Crédito', 'Cartão de Débito', 'Pix']
-    currency              Currency @default(BRL)
-    bankAccount           Json?
-    pix                   Json?
+    defaultPaymentMethods Json?        @default("[]")
+    currency              Currency     @default(BRL)
+    bankAccount           BankAccount?
+    pix                   Pix?
 
-    // Relations
-    orders     Order[]
-    categories Category[]
+    orders    Order[]
+    costumers Costumer[]
 
     // Catalog
-    catalogedMaterials Material[]
-    catalogedProducts  Product[]
-    catalogedClients   Client[]   @relation("onCatalogProjects")
+    products  Product[]
+    materials Material[]
 
-    account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
-    accountId String
+    account   Account @relation(fields: [accountId], references: [id])
+    accountId String  @unique
 
     @@index([accountId])
     @@map("projects")
 }
 
+model Costumer {
+    id              String   @id @default(cuid())
+    serverCreatedAt DateTime @default(now())
+    lastModifiedAt  DateTime @default(now()) @updatedAt
+    isDeleted       Boolean  @default(false)
+
+    name      String
+    image_url String?
+    phone     String?
+    email     String?
+    address   String?
+
+    project   Project @relation(fields: [projectId], references: [id])
+    projectId String
+
+    orders Order[]
+
+    @@index([projectId])
+    @@index([id])
+    @@map("Costumers")
+}
+
+model Pix {
+    id              String   @id @default(cuid())
+    serverCreatedAt DateTime @default(now())
+    lastModifiedAt  DateTime @default(now()) @updatedAt
+    isDeleted       Boolean  @default(false)
+
+    key_type PixKeyType
+    key      String     @unique
+
+    project   Project @relation(fields: [projectId], references: [id])
+    projectId String  @unique
+
+    @@index([projectId])
+    @@map("pix")
+}
+
+enum PixKeyType {
+    CPF
+    CNPJ
+    EMAIL
+    PHONE
+    RANDOM
+}
+
+model BankAccount {
+    id              String   @id @default(cuid())
+    serverCreatedAt DateTime @default(now())
+    lastModifiedAt  DateTime @default(now()) @updatedAt
+    isDeleted       Boolean  @default(false)
+
+    bank        Bank
+    agency      String
+    agencyDigit String
+    account     String
+    accountType String
+
+    titularPin String
+
+    project   Project @relation(fields: [projectId], references: [id])
+    projectId String  @unique
+
+    @@index([projectId])
+    @@map("bank_accounts")
+}
+
+enum Bank {
+    BANCO_DO_BRASIL
+    BRADESCO
+    CAIXA
+    ITAU
+    NUBANK
+    SANTANDER
+    SICOOB
+    SICREDI
+    ORIGINAL
+    INTER
+    C6
+    BS2
+    NEON
+    PAGBANK
+    BRB
+    BANRISUL
+    STONE
+    VIA_CREDI
+    OTHER
+}
+
+model Address {
+    id              String   @id @default(cuid())
+    serverCreatedAt DateTime @default(now())
+    lastModifiedAt  DateTime @default(now()) @updatedAt
+    isDeleted       Boolean  @default(false)
+
+    country  String
+    state    String
+    city     String
+    district String
+    street   String
+    number   String
+    zipCode  String
+
+    project   Project @relation(fields: [projectId], references: [id])
+    projectId String  @unique
+
+    @@index([projectId])
+    @@map("addresses")
+}
+
+model Marketplace {
+    id              String   @unique @default(uuid())
+    serverCreatedAt DateTime @default(now())
+    lastModifiedAt  DateTime @default(now()) @updatedAt
+
+    at          String  @unique
+    slogan      String?
+    description String?
+    isEnabled   Boolean @default(false)
+
+    // Security
+    isVerified Boolean @default(false)
+
+    businessModels Json? @default("[\"in_person\",\"online\",\"delivery\"]") // ['in_person', 'online', 'delivery']
+    agenda         Json? @default("[\"sunday\",\"monday\",\"tuesday\",\"wednesday\",\"thursday\",\"friday\",\"saturday\"]")
+
+    autoHolidayUnavailability Boolean @default(false)
+    busyAmount                Int     @default(1)
+    unavailableAmount         Int     @default(3)
+
+    serviceZoneCountries Json? @default("[]")
+    serviceZoneStates    Json? @default("[]")
+    serviceZoneCities    Json? @default("[]")
+
+    project   Project @relation(fields: [projectId], references: [id])
+    projectId String  @unique
+
+    @@index([projectId])
+}
+
 model SegmentCategory {
-    id               String   @id @unique @default(uuid())
-    server_createdAt DateTime @default(now())
+    id        String   @id @unique @default(uuid())
+    createdAt DateTime @default(now())
 
     name     String    @unique
     segments Segment[]
@@ -139,8 +253,8 @@ model SegmentCategory {
 }
 
 model Segment {
-    id               String   @id @unique @default(uuid())
-    server_createdAt DateTime @default(now())
+    id        String   @id @unique @default(uuid())
+    createdAt DateTime @default(now())
 
     name     String    @unique
     projects Project[]
@@ -153,26 +267,33 @@ model Segment {
 }
 
 model Category {
-    id               String   @id @default(uuid())
-    server_createdAt DateTime @default(now())
+    id              String   @id @default(uuid())
+    serverCreatedAt DateTime @default(now())
+    lastModifiedAt  DateTime @default(now()) @updatedAt
+    isDeleted       Boolean  @default(false)
 
     name  String
     icon  String
     color String
 
-    projects Project[]
+    project   Project @relation(fields: [projectId], references: [id])
+    projectId String
 
+    products Product[]
+
+    @@index([projectId])
     @@map("categories")
 }
 
 enum ProductType {
-    service
-    product
+    SERVICE
+    PART
+    PRODUCT
 }
 
 enum OrderType {
-    service
-    order
+    SERVICE
+    ORDER
 }
 
 enum Currency {
@@ -198,41 +319,29 @@ enum Currency {
 }
 
 model Order {
-    id               String   @id @default(cuid())
-    server_createdAt DateTime @default(now())
+    id              String   @id @default(cuid())
+    serverCreatedAt DateTime @default(now())
+    lastModifiedAt  DateTime @default(now()) @updatedAt
+    isDeleted       Boolean  @default(false)
 
-    lastModifiedAt DateTime?
-    isDeleted      Boolean   @default(false)
-
-    name   String
-    date   DateTime?
-    status OrderStatus @default(pending) // ['pending', 'archived', 'awaiting_payment', 'warranty', 'concluded', 'cancelled']
-
+    name           String
+    date           DateTime?
+    status         OrderStatus @default(PENDING) // ['pending', 'archived', 'awaiting_payment', 'warranty', 'concluded', 'cancelled']
     additionalInfo String?
+    notes          String?
 
     // Payment
-    paymentCondition PaymentCondition @default(full) // full, card, agreement
-    paymentMethods   String? // ['Boleto', 'Dinheiro', 'Transferência Bancária', 'Cartão de Crédito', 'Cartão de Débito', 'Pix']
+    paymentConditions   PaymentConditions? @relation(onDelete: Cascade, onUpdate: Cascade, fields: [paymentConditionsId], references: [id]) // FULL, INSTALLMENTS, AGREEMENT
+    paymentConditionsId String?            @unique
 
-    // Split Values (for card and agreement payment)
-    splitValue String?
-    // pode ser:
-    // 1. parcelas: do cartão quando NÃO há valor restante do acordo (splitRemaining)
-    // 2. valor inicial do acordo em dinheiro: quando NÃO HÁ símbolos no valor (ex: número inteiro ['462'], '1/3' ou '1/2')
-    // 3. valor inicial do acordo em porcentagem: quando há o símbolo de (%) no valor
-
-    splitRemaining String? // pode ser 'parcelas' (ex: 2x, 3x) ou 'valor restante do acordo' ('remaining')
+    paymentMethods Json? @default("[]") // ['cash', 'credit_card', 'debit_card', 'pix', 'transfer', 'deposit', 'check', 'billet', 'agreement']
 
     // Warranty
-    warrantyPeriod  Int     @default(90)
+    warrantyPeriod  Int?    @default(90)
     warrantyDetails String?
 
-    // Invoice
-    invoiceValidity Int   @default(15)
-    discount        Float @default(0)
-
-    client   Client? @relation(fields: [clientId], references: [id])
-    clientId String?
+    costumer   Costumer? @relation(fields: [costumerId], references: [id])
+    costumerId String?
 
     project   Project @relation(fields: [projectId], references: [id])
     projectId String
@@ -240,97 +349,178 @@ model Order {
     products  Product[]
     materials Material[]
 
+    discounts Discount[]
+    fees      Fee[]
+
+    @@index([costumerId])
     @@index([projectId])
-    @@index([clientId])
     @@map("orders")
 }
 
 enum OrderStatus {
-    pending
-    archived
-    awaiting_payment
-    warranty
-    concluded
-    cancelled
+    ARCHIVED
+    PENDING
+    WARRANTY
+    CONCLUDED
+    CANCELLED
 }
 
-enum PaymentCondition {
-    full
-    card
-    agreement
+model PaymentConditions {
+    id              String   @id @default(uuid())
+    serverCreatedAt DateTime @default(now())
+    lastModifiedAt  DateTime @default(now()) @updatedAt
+    isDeleted       Boolean  @default(false)
+
+    type PaymentType @default(FULL) // ['full', 'installments', 'agreement']
+
+    // Installments
+    installmentsAmount Int? @default(2)
+
+    // Agreement
+    agreementValue     Float?
+    agreementValueType ValueType @default(CURRENCY) // ['percentage', 'currency']
+
+    // Other
+    details String?
+
+    order Order?
+
+    @@map("payment_conditions")
 }
 
-model Client {
-    id               String   @id @default(cuid())
-    server_createdAt DateTime @default(now())
-
-    lastModifiedAt DateTime?
-    isDeleted      Boolean   @default(false)
-
-    name      String?
-    image_url String?
-    phone     String?
-    email     String?
-    address   String?
-
-    costumerAccount   CostumerAccount? @relation(fields: [costumerAccountId], references: [id])
-    costumerAccountId String?
-
-    project   Project @relation(fields: [projectId], references: [id], name: "onCatalogProjects")
-    projectId String
-
-    orders Order[]
-
-    @@index([projectId])
-    @@index([costumerAccountId])
-    @@map("clients")
+enum PaymentType {
+    FULL
+    INSTALLMENTS
+    AGREEMENT
 }
 
-model Product {
-    id               String   @id @default(cuid())
-    server_createdAt DateTime @default(now())
+enum ValueType {
+    PERCENTAGE
+    CURRENCY
+}
 
-    lastModifiedAt DateTime?
-    isDeleted      Boolean   @default(false)
+model Fee {
+    id              String   @id @default(uuid())
+    serverCreatedAt DateTime @default(now())
+    lastModifiedAt  DateTime @default(now()) @updatedAt
 
-    name        String
-    description String
-    price       Float
+    name        String?
+    description String?
+    value       Float
+    valueType   ValueType @default(CURRENCY) // ['percentage', 'currency']
+    type        FeeType   @default(OTHER) // ['delivery', 'service ,'other']
 
     order   Order  @relation(fields: [orderId], references: [id])
     orderId String
 
-    projectWithBookmark Project? @relation(fields: [projectId], references: [id])
-    projectId           String?
+    @@index([orderId])
+    @@map("fees")
+}
+
+enum FeeType {
+    TRANSPORT
+    SERVICE
+    OTHER
+}
+
+model Discount {
+    id              String   @id @default(uuid())
+    serverCreatedAt DateTime @default(now())
+    lastModifiedAt  DateTime @default(now()) @updatedAt
+
+    name        String
+    description String?
+    value       Float
+    valueType   ValueType    @default(CURRENCY) // ['percentage', 'currency']
+    type        DiscountType
+
+    order   Order  @relation(fields: [orderId], references: [id])
+    orderId String
+
+    @@index([orderId])
+    @@map("discounts")
+}
+
+enum DiscountType {
+    PRODUCTS
+    MATERIALS
+}
+
+model Product {
+    id              String   @id @default(cuid())
+    serverCreatedAt DateTime @default(now())
+    lastModifiedAt  DateTime @default(now()) @updatedAt
+    isDeleted       Boolean  @default(false)
+
+    name        String
+    description String?
+    price       Float?     @default(0)
+    unit        Unit       @default(UNIT)
+    amount      Int        @default(1)
+    categories  Category[]
+
+    order   Order  @relation(fields: [orderId], references: [id])
+    orderId String
+
+    project   Project? @relation(fields: [projectId], references: [id])
+    projectId String?
 
     @@index([projectId])
     @@index([orderId])
     @@map("products")
 }
 
+enum Unit {
+    UNIT
+    M2
+    KM2
+    HA
+    MM
+    CM
+    M
+    KM
+    ML
+    L
+    M3
+    MIN
+    H
+    DAYS
+    WEEKS
+    MONTHS
+    G
+    KG
+}
+
 model Material {
-    id               String   @id @default(cuid())
-    server_createdAt DateTime @default(now())
+    id              String   @id @default(cuid())
+    serverCreatedAt DateTime @default(now())
+    lastModifiedAt  DateTime @default(now()) @updatedAt
+    isDeleted       Boolean  @default(false)
 
-    lastModifiedAt DateTime?
-    isDeleted      Boolean   @default(false)
+    name        String
+    description String?
+    image_url   String?
 
-    name         String
-    description  String?
-    image_url    String?
-    price        Float   @default(0)
-    amount       Int     @default(1)
-    profitMargin Float   @default(0)
-    availability Boolean @default(true)
-    bookmarked   Boolean @default(false)
+    price          Float?         @default(0)
+    cost           Float          @default(0)
+    profitMargin   Float          @default(0)
+    amount         Int            @default(1)
+    unit           Unit           @default(UNIT)
+    responsibility Responsability @default(PROJECT) // ['project', 'costumer', 'other']
 
     order   Order  @relation(fields: [orderId], references: [id])
     orderId String
 
-    projectWithBookmark Project? @relation(fields: [projectId], references: [id])
-    projectId           String?
+    project   Project? @relation(fields: [projectId], references: [id])
+    projectId String?
 
     @@index([projectId])
     @@index([orderId])
     @@map("materials")
+}
+
+enum Responsability {
+    PROJECT
+    COSTUMER
+    OTHER
 }

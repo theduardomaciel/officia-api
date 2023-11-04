@@ -19,7 +19,6 @@ export const AccountCreateSchema = z.object({
     phone: z.string().optional(),
     birthday: z.dateString().past(),
     gender: z.enum(['male', 'female', 'other']).optional(),
-    reactivating: z.boolean().optional()
 });
 
 export const AccountSchema = AccountCreateSchema.partial().and(

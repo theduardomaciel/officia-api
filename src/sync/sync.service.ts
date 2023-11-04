@@ -24,7 +24,7 @@ export class SyncService implements SyncRepository {
                         }
                     }
                 }),
-                this.prisma.client.findMany({
+                this.prisma.costumer.findMany({
                     where: {
                         lastModifiedAt: {
                             gt: lastPulledAt
@@ -94,7 +94,7 @@ export class SyncService implements SyncRepository {
                         isDeleted: true
                     }
                 }),
-                this.prisma.client.deleteMany({
+                this.prisma.costumer.deleteMany({
                     where: {
                         isDeleted: true
                     }
@@ -135,7 +135,7 @@ export class SyncService implements SyncRepository {
                 this.prisma.project.createMany({
                     data: {
                         ...projects.created,
-                        server_createdAt: new Date()
+                        serverCreatedAt: new Date()
                     }
                 }),
                 this.prisma.project.updateMany({
@@ -154,14 +154,14 @@ export class SyncService implements SyncRepository {
                     }
                 }),
 
-                // Clients
-                this.prisma.client.createMany({
+                // Costumers
+                this.prisma.costumer.createMany({
                     data: {
                         ...clients.created,
-                        server_createdAt: new Date()
+                        serverCreatedAt: new Date()
                     }
                 }),
-                this.prisma.client.updateMany({
+                this.prisma.costumer.updateMany({
                     where: {
                         id: {
                             in: clients.updated.map((record) => record.id)
@@ -169,7 +169,7 @@ export class SyncService implements SyncRepository {
                     },
                     data: clients.updated
                 }),
-                this.prisma.client.deleteMany({
+                this.prisma.costumer.deleteMany({
                     where: {
                         id: {
                             in: clients.deleted
@@ -181,7 +181,7 @@ export class SyncService implements SyncRepository {
                 this.prisma.material.createMany({
                     data: {
                         ...materials.created,
-                        server_createdAt: new Date()
+                        serverCreatedAt: new Date()
                     }
                 }),
                 this.prisma.material.updateMany({
@@ -204,7 +204,7 @@ export class SyncService implements SyncRepository {
                 this.prisma.product.createMany({
                     data: {
                         ...products.created,
-                        server_createdAt: new Date()
+                        serverCreatedAt: new Date()
                     }
                 }),
                 this.prisma.product.updateMany({
@@ -227,7 +227,7 @@ export class SyncService implements SyncRepository {
                 this.prisma.order.createMany({
                     data: {
                         ...orders.created,
-                        server_createdAt: new Date()
+                        serverCreatedAt: new Date()
                     }
                 }),
                 this.prisma.order.updateMany({

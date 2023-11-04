@@ -73,17 +73,10 @@ export class AccountsController {
 
         if (account) {
             if (account.disabledAt) {
-                if (userData.reactivating) {
-                    await this.accountsRepository.updateAccount({
-                        where: { id: account.id },
-                        data: { disabledAt: undefined }
-                    });
-                } else {
-                    throw new HttpException(
-                        `Account disabled/${account.disabledAt.toISOString()}`,
-                        HttpStatus.FORBIDDEN
-                    );
-                }
+                await this.accountsRepository.updateAccount({
+                    where: { id: account.id },
+                    data: { disabledAt: undefined }
+                });
             }
 
             const isPasswordValid = this.authHelper.isPasswordValid(
@@ -109,8 +102,7 @@ export class AccountsController {
             }
         } else {
             try {
-                // Meio que GAMBIARRA: Filtramos o "reactivating" para que ele não interrompa a criação da conta
-                const { password, reactivating, ...rest } =
+                const { password, ...rest } =
                     userData as AccountCreateDto;
 
                 const hashedPassword = this.authHelper.encodePassword(password);
